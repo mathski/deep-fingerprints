@@ -5,14 +5,28 @@
 ## Copyright (c) 2020
 ##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+import os
+import numpy as np
+
 import torch
+from PIL import Image
 
 import nets
 import utils
-import options
+from options import Options
 
-from option import Options
+class MyDataset(torch.utils.data.Dataset):
+    def __init__(self, image_paths, target_paths, train=True):
+        self.image_paths = image_paths
+        self.target_paths = target_paths
 
+    def __getitem__(self, index):
+        image = Image.open(self.image_paths[index])
+        mask = Image.open(self.target_paths[index])
+        return image, mask
+
+    def __len__(self):
+        return len(self.image_paths)
 
 def main():
     # Print PyTorch Version
@@ -32,7 +46,7 @@ def main():
     else:
         raise ValueError('Unknown experiment type')
 
-def train():
+def train(args):
     check_paths(args)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -40,7 +54,7 @@ def train():
         torch.cuda.manual_seed(args.seed)
 
     # construct data loader
-    dataset = MyDataset(args.image_paths, args.message_paths)
+    dataset = MyDataset(args.image_path, args.message_path)
 
     # construct neural networks
     encoder = nets.CSFE()
@@ -50,6 +64,7 @@ def train():
         decoder.cuda()
 
     # construct optimizer
+    params = list(encoder.parameters())+list(decoder.parameters())
     optimizer = torch.optim.Adam(params, lr=args.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
     # define loss
@@ -64,6 +79,7 @@ def train():
             enc = encoder(img, code)
 
             # channel
+            #nothing for now
 
             # decode encoded image
             output = decoder(enc)
@@ -90,19 +106,6 @@ def check_paths(args):
     except OSError as e:
         print(e)
         sys.exit(1)
-
-class MyDataset(Dataset):
-    def __init__(self, image_paths, target_paths, train=True):
-        self.image_paths = image_paths
-        self.target_paths = target_paths
-
-    def __getitem__(self, index):
-        image = Image.open(self.image_paths[index])
-        mask = Image.open(self.target_paths[index])
-        return image, mask
-
-    def __len__(self):
-        return len(self.image_paths)
 
 
 if __name__ == '__main__':
