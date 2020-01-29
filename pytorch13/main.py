@@ -6,24 +6,39 @@
 ##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 import os
+import glob
 import numpy as np
 
 import torch
+from torchvision import transforms
 from PIL import Image
 
 import nets
 import utils
 from options import Options
 
+from barbar import Bar
+
 class MyDataset(torch.utils.data.Dataset):
-    def __init__(self, image_paths, target_paths, train=True):
-        self.image_paths = image_paths
-        self.target_paths = target_paths
+    def __init__(self, image_paths, target_paths, image_transform=None, message_transform=None, train=True):
+        self.image_paths = glob.glob(image_paths)
+        self.target_paths = glob.glob(target_paths)
+        self.image_transform = image_transform
+        self.message_transform = message_transform
 
     def __getitem__(self, index):
         image = Image.open(self.image_paths[index])
-        mask = Image.open(self.target_paths[index])
-        return image, mask
+        message = Image.open(self.target_paths[index])
+        
+        if self.image_transform:
+            image = self.image_transform(image)
+        if self.message_transform:
+            message = self.message_transform(message)
+
+        image = transforms.ToTensor()(image)
+        message = transforms.ToTensor()(message)
+
+        return image, message
 
     def __len__(self):
         return len(self.image_paths)
@@ -55,6 +70,7 @@ def train(args):
 
     # construct data loader
     dataset = MyDataset(args.image_path, args.message_path)
+    loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=4, pin_memory=True, drop_last=False)
 
     # construct neural networks
     encoder = nets.CSFE()
@@ -73,7 +89,7 @@ def train(args):
     # training loop
     for e in range(args.epochs):
         
-        for img, code in dataset:
+        for img, code in Bar(loader):
 
             # encode image and code
             enc = encoder(img, code)
@@ -90,7 +106,7 @@ def train(args):
             total_loss = ber_loss + img_loss
 
             # occasionally print
-            print(total_loss)
+            #print(total_loss)
 
             #backprop
             optimizer.zero_grad()

@@ -20,9 +20,9 @@ class Options():
                                 help="number of training epochs, default is 2")
         train_arg.add_argument("--batch-size", type=int, default=16,
                                 help="batch size for training, default is 16 (~7GB)")
-        train_arg.add_argument("--image-path", type=str, default="/beegfs/ew2266/data/images/native12k/",
+        train_arg.add_argument("--image-path", type=str, default="/beegfs/ew2266/data/images/native/native12k/*",
                                 help="path to a folder containing another folder with all the training images")
-        train_arg.add_argument("--message-path", type=str, default="/beegfs/ew2266/data/messages/8bit256pix/",
+        train_arg.add_argument("--message-path", type=str, default="/beegfs/ew2266/data/messages/8bit256/8bit256pix/*",
                                 help="path to a folder containing another folder with all the training messages")
         train_arg.add_argument("--save-model-dir", type=str, default="models/",
                                 help="path to folder where trained model will be saved.")
